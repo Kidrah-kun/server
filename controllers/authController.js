@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const sendVerificationCode = require("../utils/sendVerificationCode.js");
 const sendToken = require("../utils/sendToken.js");
-const { use } = require("react");
+// const { use } = require("react");
 const {generateForgotPasswordEmailTemplate} = require("../utils/emailTemplates.js");
 const sendEmail = require("../utils/sendEmail.js");
 
