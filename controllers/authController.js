@@ -22,17 +22,22 @@ const register = catchAsyncErrors(async (req, res, next) => {
             accountVerified: false
         });
 
-        if (password.length < 6 || password.length > 16) {
-            return next(new ErrorHandler("Password must be between 6 and 16 characters", 400));
+        if (password.length < 8 || password.length > 16) {
+            return next(new ErrorHandler("Password must be between 8 and 16 characters", 400));
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Check if any admins exist - if not, make the first user an Admin
+        const adminCount = await User.countDocuments({ role: "Admin", accountVerified: true });
+        const userRole = adminCount === 0 ? "Admin" : "User";
 
         // creating user here with accountVerified set to true
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
+            role: userRole,
             accountVerified: true,
         });
 
@@ -68,6 +73,8 @@ const logout = catchAsyncErrors(async (req, res, next) => {
     res.status(200).cookie("token", "", {
         expires: new Date(Date.now()),
         httpOnly: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: process.env.NODE_ENV === "production"
     }).json({
         success: true,
         message: "Logged out successfully",

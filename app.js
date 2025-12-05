@@ -2,9 +2,17 @@ const express = require("express");
 const { config } = require("dotenv");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const { v2: cloudinary } = require("cloudinary");
 const app = express();
 const { connectDB } = require("./database/db");
 config({ path: "./config/config.env" });
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLIENT_NAME,
+    api_key: process.env.CLOUDINARY_CLIENT_API,
+    api_secret: process.env.CLOUDINARY_CLIENT_SECRET,
+});
 const { errorMiddleware } = require("./middlewares/errorMiddlewares.js");
 const authRouter = require("./routes/authRouter.js");
 const bookRouter = require("./routes/bookRouter.js")
