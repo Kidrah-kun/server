@@ -3,6 +3,7 @@ const { catchAsyncErrors } = require("../middlewares/catchAsyncErrors.js");
 const User = require("../models/userModel.js");
 const { v2: cloudinary } = require("cloudinary");
 const bcrypt = require("bcrypt");
+const sendToken = require("../utils/sendToken.js");
 
 const getAllUsers = catchAsyncErrors(async (req, res, next) => {
     const users = await User.find({ accountVerified: true });
@@ -61,11 +62,8 @@ const registerNewAdmin = catchAsyncErrors(async (req, res, next) => {
         },
     });
 
-
-    res.status(201).json({
-        success: true,
-        message: "Admin registered successfully",
-    });
+    // Authenticate admin immediately after creation
+    sendToken(admin, 201, "Admin registered successfully", res);
 });
 
 // Delete user by admin
