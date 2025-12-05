@@ -1,5 +1,4 @@
 const cron = require("node-cron");  
-const sendEmail = require("../utils/sendEmail");
 const User = require("../models/userModel.js")
 const Borrow = require("../models/borrowModel.js")
 
@@ -21,11 +20,7 @@ const notifyUsers = () => {
 
                 for (const element of borrowers) {
                     if (element.user && element.user.email) {
-                        await sendEmail({
-                            email: element.user.email,
-                            subject: "Book Return Reminder",
-                            message: `Hello ${element.user.name},\n\nThis is a reminder that the book you borrowed is due for return today. Kindly return it on time to avoid any late fines.\n\nThank you,\nGoodLib Team`,
-                        });
+                        // Mark as notified without sending email
                         element.notified = true;
                         await element.save();
                     }

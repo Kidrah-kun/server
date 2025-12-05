@@ -46,8 +46,6 @@ const userSchema = new mongoose.Schema({
     public_id:String,
     url:String, 
   },
-  verificationCode:Number,
-  verificationCodeExpire:Date,
   resetPasswordToken:String,
   resetPasswordExpire:Date,
 },
@@ -55,20 +53,6 @@ const userSchema = new mongoose.Schema({
         timestamps:true,
     }
 );
-
-userSchema.methods.generateVerificationCode = function(){
-    function generateRandomFiveDigitCode() {
-        const firstDigit = Math.floor(Math.random() * 9) + 1; // Ensure the first digit is not zero
-        const remainingDigits = Math.floor(Math.random()* 10000)
-        .toString()
-        .padStart(4,0);
-        return parseInt(firstDigit + remainingDigits);
-    }
-    const verificationCode = generateRandomFiveDigitCode();
-    this.verificationCode = verificationCode;
-    this.verificationCodeExpire = Date.now()+15*60*1000; // 15 minutes from now
-    return verificationCode;
-}; 
 
 userSchema.methods.generateToken = function(){
     return jwt.sign({id:this._id}, process.env.JWT_SECRET_KEY, {
