@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/admin/add", isAuthenticated, isAuthorized("Admin"), addBook);
 router.put("/admin/update/:id", isAuthenticated, isAuthorized("Admin"), updateBook);
 router.delete("/admin/delete/:id", isAuthenticated, isAuthorized("Admin"), deleteBook);
-router.get("/all", isAuthenticated, getAllBooks);
+router.get("/all", getAllBooks); // Public route - anyone can browse books
 
 
 module.exports = router;
