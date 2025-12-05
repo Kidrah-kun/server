@@ -123,4 +123,29 @@ const deleteOwnAccount = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-module.exports = { getAllUsers, registerNewAdmin, deleteUserByAdmin, deleteOwnAccount };
+// Promote user to admin
+const promoteUserToAdmin = catchAsyncErrors(async (req, res, next) => {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+
+    // Check if user is already an admin
+    if (user.role === "Admin") {
+        return next(new ErrorHandler("User is already an admin", 400));
+    }
+
+    // Update user role to Admin
+    user.role = "Admin";
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: `${user.name} has been promoted to admin successfully`,
+        user,
+    });
+});
+
+module.exports = { getAllUsers, registerNewAdmin, deleteUserByAdmin, deleteOwnAccount, promoteUserToAdmin };
