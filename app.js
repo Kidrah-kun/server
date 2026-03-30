@@ -45,7 +45,7 @@ app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 // notifyUsers();
 // removeUnverifiedAccounts();
-// connectDB();
+connectDB();
 
 app.use(errorMiddleware);
 module.exports = app;
