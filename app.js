@@ -48,4 +48,4 @@ removeUnverifiedAccounts();
 connectDB();
 
 app.use(errorMiddleware);
-module.exports = { app };
+module.exports = app;
