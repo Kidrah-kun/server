@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
     },
     borrowedBooks:[{
         bookId:{
-            type:mongoose.Schema.Types.ObjectId, // Reference to Book model in mongoDB 
+            type:mongoose.Schema.Types.ObjectId,
             ref:"Book" 
         },
         returned:{
@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema({
     public_id:String,
     url:String, 
   },
+  // OTP fields
+  verificationOTP: String,
+  verificationOTPExpire: Date,
+  // Password reset fields
   resetPasswordToken:String,
   resetPasswordExpire:Date,
 },
@@ -70,6 +74,17 @@ userSchema.methods.getResetPasswordToken = function(){
     
     this.resetPasswordExpire = Date.now() + 15*60*1000; // 15 minutes
     return resetToken;
+}
+
+// Generate a 6-digit OTP
+userSchema.methods.generateVerificationOTP = function(){
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    this.verificationOTP = crypto
+        .createHash("sha256")
+        .update(otp)
+        .digest("hex");
+    this.verificationOTPExpire = Date.now() + 15*60*1000; // 15 minutes
+    return otp;
 }
 
 module.exports = mongoose.model("User",userSchema);

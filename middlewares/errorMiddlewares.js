@@ -25,7 +25,7 @@ const errorMiddleware = (err,req,res,next)=>{
         const message = `Json Web Token is expired, try again`;
         err= new ErrorHandler(message,statusCode); 
     }
-    if (err.name === "castError"){
+    if (err.name === "CastError"){
         const statusCode = 400;
         const message = `Resource not found. Invalid: ${err.path}`;
         err= new ErrorHandler(message,statusCode); 

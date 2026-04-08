@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const sendToken = require("../utils/sendToken.js");
 
+// Step 1: Register — creates unverified user, returns OTP for client to email
 const register = catchAsyncErrors(async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
@@ -17,10 +18,7 @@ const register = catchAsyncErrors(async (req, res, next) => {
         }
 
         // Clean up any unverified accounts with the same email
-        await User.deleteMany({
-            email,
-            accountVerified: false
-        });
+        await User.deleteMany({ email, accountVerified: false });
 
         if (password.length < 8 || password.length > 16) {
             return next(new ErrorHandler("Password must be between 8 and 16 characters", 400));
@@ -32,20 +30,96 @@ const register = catchAsyncErrors(async (req, res, next) => {
         const adminCount = await User.countDocuments({ role: "Admin", accountVerified: true });
         const userRole = adminCount === 0 ? "Admin" : "User";
 
-        // creating user here with accountVerified set to true
+        // Create user as UNVERIFIED
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
             role: userRole,
-            accountVerified: true,
+            accountVerified: false,
         });
 
-        sendToken(user, 200, "Registration successful", res);
+        // Generate OTP
+        const otp = user.generateVerificationOTP();
+        await user.save({ validateBeforeSave: false });
+
+        res.status(200).json({
+            success: true,
+            message: "OTP generated. Please verify your email.",
+            userId: user._id,
+            otp: otp, // Client will send this via EmailJS
+            email: user.email,
+            name: user.name,
+        });
 
     } catch (error) {
         next(error);
     }
+});
+
+// Step 2: Verify OTP — verifies the account
+const verifyOTP = catchAsyncErrors(async (req, res, next) => {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+        return next(new ErrorHandler("User ID and OTP are required", 400));
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+
+    if (user.accountVerified) {
+        return next(new ErrorHandler("Account already verified", 400));
+    }
+
+    const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
+
+    if (user.verificationOTP !== hashedOTP) {
+        return next(new ErrorHandler("Invalid OTP", 400));
+    }
+
+    if (user.verificationOTPExpire < Date.now()) {
+        return next(new ErrorHandler("OTP has expired. Please register again.", 400));
+    }
+
+    // Verify the account
+    user.accountVerified = true;
+    user.verificationOTP = undefined;
+    user.verificationOTPExpire = undefined;
+    await user.save();
+
+    sendToken(user, 200, "Account verified successfully!", res);
+});
+
+// Resend OTP
+const resendOTP = catchAsyncErrors(async (req, res, next) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+        return next(new ErrorHandler("User ID is required", 400));
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+
+    if (user.accountVerified) {
+        return next(new ErrorHandler("Account already verified", 400));
+    }
+
+    const otp = user.generateVerificationOTP();
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+        success: true,
+        message: "New OTP generated",
+        otp: otp,
+        email: user.email,
+        name: user.name,
+    });
 });
 
 const login = catchAsyncErrors(async (req, res, next) => {
@@ -66,7 +140,6 @@ const login = catchAsyncErrors(async (req, res, next) => {
     }
 
     sendToken(user, 200, "Login successful", res);
-
 });
 
 const logout = catchAsyncErrors(async (req, res, next) => {
@@ -90,7 +163,6 @@ const getUser = catchAsyncErrors(async (req, res, next) => {
 });
 
 const forgotPassword = catchAsyncErrors(async (req, res, next) => {
-
     if (!req.body.email) {
         return next(new ErrorHandler("Email is required.", 400));
     }
@@ -104,17 +176,15 @@ const forgotPassword = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("User not found, please register", 404));
     }
     const resetToken = user.getResetPasswordToken();
-
     await user.save({ validateBeforeSave: false });
     const resetPasswordUrl = `${process.env.FRONTEND_URL}/password/reset/${resetToken}`;
 
     res.status(200).json({
         success: true,
-        message: `Password reset link generated successfully`,
+        message: "Password reset link generated successfully",
         resetToken: resetToken,
         resetUrl: resetPasswordUrl,
     });
-
 });
 
 const resetPassword = catchAsyncErrors(async (req, res, next) => {
@@ -150,7 +220,6 @@ const resetPassword = catchAsyncErrors(async (req, res, next) => {
     await user.save();
 
     sendToken(user, 200, "Password reset successful", res);
-
 });
 
 const updatePassword = catchAsyncErrors(async (req, res, next) => {
@@ -186,5 +255,4 @@ const updatePassword = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-module.exports = { register, login, logout, getUser, forgotPassword, resetPassword, updatePassword };
-
+module.exports = { register, verifyOTP, resendOTP, login, logout, getUser, forgotPassword, resetPassword, updatePassword };
