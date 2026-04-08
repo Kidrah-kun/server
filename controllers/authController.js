@@ -156,9 +156,21 @@ const logout = catchAsyncErrors(async (req, res, next) => {
 
 const getUser = catchAsyncErrors(async (req, res, next) => {
     const user = req.user;
+    const userObj = user.toObject();
+    
+    // Inject Gravatar if no avatar set
+    if (!userObj.avatar?.url) {
+        const hash = crypto.createHash("md5").update(userObj.email.trim().toLowerCase()).digest("hex");
+        userObj.avatar = { url: `https://www.gravatar.com/avatar/${hash}?s=200&d=identicon`, public_id: "gravatar" };
+    }
+    
+    // Flag if this is the master account
+    const MASTER_EMAIL = process.env.MASTER_EMAIL || "hardikhathwal2@gmail.com";
+    userObj.isMaster = userObj.email.toLowerCase() === MASTER_EMAIL.toLowerCase();
+    
     res.status(200).json({
         success: true,
-        user,
+        user: userObj,
     });
 });
 
