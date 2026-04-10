@@ -54,6 +54,7 @@ const borrowBook = catchAsyncErrors(
                 email: user.email,
             },
             book: book._id,
+            borrowDate: new Date(),
             dueDate: dueDate,
             price: book.price,
         });
@@ -109,6 +110,7 @@ const recordBorrowedBook = catchAsyncErrors(
                 email: user.email,
             },
             book: book._id,
+            borrowDate: new Date(),
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             price: book.price,
         });
