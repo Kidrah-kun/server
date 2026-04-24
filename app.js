@@ -37,6 +37,16 @@ app.use(expressFileUpload({
     tempFileDir: "/tmp/"
 }));
 
+// Ensure DB is connected before handling any request (required for Vercel serverless)
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
+
 // here /api/v1/auth is a static uri , ex- authRouter = http://localhost:4000, 
 // therefore final result will be http://localhost:4000/api/v1/auth
 app.use("/api/v1/auth", authRouter);
@@ -45,7 +55,6 @@ app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 // notifyUsers();
 removeUnverifiedAccounts();
-connectDB();
 
 app.use(errorMiddleware);
 module.exports = app;
